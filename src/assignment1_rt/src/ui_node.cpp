@@ -28,17 +28,21 @@ private:
         while (rclcpp::ok())
         {
             std::string robot;
-            double vel;
+            double vel_linear;
+            double vel_angular;
 
             std::cout << "Seleziona robot (turtle1 / turtle2): ";
             std::cin >> robot;
 
             std::cout << "Inserisci velocità lineare: ";
-            std::cin >> vel;
+            std::cin >> vel_linear;
+
+            std::cout << "Inserisci velocità angolare: ";
+            std::cin >> vel_angular;
 
             geometry_msgs::msg::Twist msg;
-            msg.linear.x = vel;
-            msg.angular.z = 0.0;
+            msg.linear.x = vel_linear;
+            msg.angular.z = vel_angular;
 
             auto start = std::chrono::steady_clock::now();
 
