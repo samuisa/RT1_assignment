@@ -99,3 +99,16 @@ The node implements the `handle_turtle` function for each robot, applying the fo
     ```bash
     ros2 run assignment1_rt ui
     ```
+###### Project structure
+
+```bash
+.
+└── assignment1_rt
+    ├── CMakeLists.txt
+    ├── package.xml
+    ├── scripts
+    │   └── spawn.py
+    └── src
+        ├── distance_node.cpp
+        └── ui_node.cpp
+```
