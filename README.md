@@ -55,8 +55,8 @@ This C++ node is the brain of the safety system. It intercepts the raw commands 
 The node implements the `handle_turtle` function for each robot, applying the following rules:
 
 1.  **Command Limiting:**
-    * Limits linear velocity to $\pm 2.0$.
-    * Limits angular velocity to $\pm 4.0$.
+    * Limits linear velocity to $\pm 5.0$.
+    * Limits angular velocity to $\pm 5.0$.
 2.  **Critical Zone Definition:**
     * **Collision:** The distance between the two turtles is $\leq 1.0$.
     * **Wall:** A turtle's position is $\leq 1.0$ or $\geq 10.0$ (tank boundary).
@@ -71,8 +71,6 @@ The node implements the `handle_turtle` function for each robot, applying the fo
     In summary, linear velocity is only permitted if the turtle about to move does not displace to a position where:
     * The distance from the other turtle is $\leq 1.0$.
     * The distance from the wall is $\leq 1.0$.
-
-This two-level mechanism ensures that the turtles do not collide with each other or the borders, regardless of the raw (even dangerous) commands sent by the `ui_node`.
 
 #### How to run the simulation
 
