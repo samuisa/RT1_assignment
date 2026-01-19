@@ -36,13 +36,21 @@ ament_target_dependencies(safety_node rclcpp std_msgs sensor_msgs geometry_msgs 
 # FIX DEPRECATION: Sintassi corretta per linkare i messaggi custom
 target_link_libraries(safety_node "${cpp_typesupport_target}")
 
-# Installazione
+# Installazione Eseguibili
 install(TARGETS
   controller_node
   safety_node
   DESTINATION lib/${PROJECT_NAME})
 
-install(DIRECTORY launch
-  DESTINATION share/${PROJECT_NAME})
+# MODIFICA: Installazione di TUTTE le cartelle (Launch + Assets Grafici/Config)
+install(DIRECTORY
+  config
+  launch
+  meshes
+  urdf
+  worlds
+  rviz
+  DESTINATION share/${PROJECT_NAME}
+)
 
 ament_package()
