@@ -8,46 +8,49 @@ from launch_ros.substitutions import FindPackageShare
 
 def generate_launch_description():
     
-    # MODIFICA: Ora cerchiamo i file di launch all'interno di questo stesso pacchetto
+    # Locate the current package share directory
     pkg_assignment2 = FindPackageShare('assignment2_rt')
     
-    # Avvio Simulazione (Gazebo + Robot + Bridge)
+    # Launch Simulation (Gazebo + Robot + Bridge)
+    # This includes the external launch file that spawns the robot
     spawn_robot_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource([
             PathJoinSubstitution([
-                pkg_assignment2, # Usa il pacchetto corrente
+                pkg_assignment2, 
                 'launch',
                 'spawn_robot.launch.py'
             ])
         ])
     )
 
-    # Nodo Controller (Input Utente)
-    # REMAPPING: Il controller crede di scrivere su /cmd_vel, ma noi lo
-    # deviamo su /cmd_vel_input affinché il Safety Node possa intercettarlo.
+    # Controller Node (User Input)
+    # REMAPPING: The controller thinks it is publishing to /cmd_vel, 
+    # but we redirect it to /cmd_vel_input so the Safety Node can intercept it.
     controller_node = Node(
         package='assignment2_rt',
         executable='controller_node', 
         name='controller',
         output='screen',
-        prefix='xterm -e',
+        prefix='xterm -e', # Opens a new terminal window for input
         remappings=[
             ('/cmd_vel', '/cmd_vel_input') 
         ]
     )
 
-    # Nodo Safety (Logica Ostacoli)
-    # Questo nodo ascolta /cmd_vel_input (dal controller) e pubblica su /cmd_vel (al robot)
+    # Safety Node (Obstacle Avoidance Logic)
+    # This node subscribes to /cmd_vel_input (from controller) and /scan,
+    # then publishes safe commands to /cmd_vel (to the robot).
     safety_node = Node(
         package='assignment2_rt',
         executable='safety_node',
         name='safety_node',
         output='screen'
-        # Non serve remapping qui perché nel codice C++ abbiamo già impostato:
+        # No remapping needed here as the C++ code is already set to:
         # Sub: /cmd_vel_input
         # Pub: /cmd_vel
     )
 
+    # Ensure Gazebo resources path is set correctly
     ensure_env_var = SetEnvironmentVariable(
         name='GZ_SIM_RESOURCE_PATH',
         value=os.environ.get('GZ_SIM_RESOURCE_PATH', '') 
