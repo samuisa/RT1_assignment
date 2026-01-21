@@ -18,12 +18,15 @@ class SafetyNode : public rclcpp::Node {
 public:
     SafetyNode() : Node("safety_node") {
         
-        // --- PARAMETRI ---
+        // --- PARAMETERS ---
         stop_dist_ = 0.50;      
         slowdown_dist_ = 1.0;   
         
         min_front_dist_ = 100.0;
         min_rear_dist_  = 100.0;
+        
+        // Initialize the log flag to false
+        stop_log_printed_ = false;
 
         last_cmd_.linear.x = 0.0;
         last_cmd_.angular.z = 0.0;
@@ -52,6 +55,9 @@ private:
     double min_front_dist_;
     double min_rear_dist_;
     
+    // New variable to track log state
+    bool stop_log_printed_;
+
     geometry_msgs::msg::Twist last_cmd_; 
     std::deque<geometry_msgs::msg::Twist> velocity_history_;
 
@@ -64,7 +70,7 @@ private:
     rclcpp::Service<assignment2_rt::srv::GetAvgVel>::SharedPtr srv_avg_vel_;
     rclcpp::Service<assignment2_rt::srv::SetThreshold>::SharedPtr srv_set_thresh_;
 
-    // --- CALLBACK SERVIZIO 1: Calcolo Media ---
+    // --- SERVICE CALLBACK 1: Average Calculation ---
     void get_avg_vel_callback(const std::shared_ptr<assignment2_rt::srv::GetAvgVel::Request> request,
                               std::shared_ptr<assignment2_rt::srv::GetAvgVel::Response> response) 
     {
@@ -91,13 +97,17 @@ private:
             response->avg_linear, response->avg_angular);
     }
 
-    // --- CALLBACK SERVIZIO 2: Set Soglia ---
+    // --- SERVICE CALLBACK 2: Set Threshold ---
     void set_threshold_callback(const std::shared_ptr<assignment2_rt::srv::SetThreshold::Request> request,
                                 std::shared_ptr<assignment2_rt::srv::SetThreshold::Response> response) 
     {
-        if (request->new_threshold > 0.0 && request->new_threshold < slowdown_dist_) {
+        if (request->new_threshold > 0.0) {
             stop_dist_ = request->new_threshold;
             response->success = true;
+            
+            // Reset the flag when the threshold changes for safety
+            stop_log_printed_ = false; 
+            
             RCLCPP_INFO(this->get_logger(), "Service Request: Threshold updated to %.2f m", stop_dist_);
         } else {
             response->success = false;
@@ -107,10 +117,13 @@ private:
 
     void publish_safe_cmd() {
         geometry_msgs::msg::Twist safe_cmd = last_cmd_;
+        bool is_emergency_stop = false; // Local flag to determine if we are stopping now
 
         if (safe_cmd.linear.x > 0.0) {
+            // Check FRONT
             if (min_front_dist_ < stop_dist_) {
-                safe_cmd.linear.x = 0.0; 
+                safe_cmd.linear.x = 0.0;
+                is_emergency_stop = true;
             } else if (min_front_dist_ < slowdown_dist_) {
                 double factor = (min_front_dist_ - stop_dist_) / (slowdown_dist_ - stop_dist_);
                 factor = std::clamp(factor, 0.0, 1.0);
@@ -118,14 +131,28 @@ private:
             }
         }
         else if (safe_cmd.linear.x < 0.0) {
+            // Check REAR
             if (min_rear_dist_ < stop_dist_) {
-                safe_cmd.linear.x = 0.0; 
+                safe_cmd.linear.x = 0.0;
+                is_emergency_stop = true;
             } else if (min_rear_dist_ < slowdown_dist_) {
                 double factor = (min_rear_dist_ - stop_dist_) / (slowdown_dist_ - stop_dist_);
                 factor = std::clamp(factor, 0.0, 1.0);
                 safe_cmd.linear.x *= factor;
             }
         }
+
+        // --- PRINT LOGIC HANDLED HERE ---
+        if (is_emergency_stop) {
+            if (!stop_log_printed_) {
+                RCLCPP_INFO(this->get_logger(), "STOP! Threshold distance reached");
+                stop_log_printed_ = true; // Prevents future prints while we are blocked
+            }
+        } else {
+            // If not in emergency stop (we are slowing down or free), reset the flag
+            stop_log_printed_ = false;
+        }
+
         pub_cmd_->publish(safe_cmd);
     }
 
@@ -175,13 +202,9 @@ private:
         publish_safe_cmd();
     }
 
-    // --- MODIFICA QUI ---
     void cmd_callback(const geometry_msgs::msg::Twist::SharedPtr msg) {
         last_cmd_ = *msg;
         
-        // AGGIORNAMENTO STORICO CON FILTRO
-        // Se il comando NON è uno stop (0,0), lo aggiungiamo alla media.
-        // Usiamo una piccola tolleranza (epsilon) per i confronti float.
         if (std::abs(msg->linear.x) > 0.001 || std::abs(msg->angular.z) > 0.001) {
             
             velocity_history_.push_back(*msg);

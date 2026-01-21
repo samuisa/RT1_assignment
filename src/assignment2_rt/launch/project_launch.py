@@ -44,7 +44,8 @@ def generate_launch_description():
         package='assignment2_rt',
         executable='safety_node',
         name='safety_node',
-        output='screen'
+        output='screen',
+        prefix='xterm -e'
         # No remapping needed here as the C++ code is already set to:
         # Sub: /cmd_vel_input
         # Pub: /cmd_vel

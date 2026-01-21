@@ -1,6 +1,5 @@
 #include "rclcpp/rclcpp.hpp"
 #include "geometry_msgs/msg/twist.hpp"
-// Generated Service Includes
 #include "assignment2_rt/srv/get_avg_vel.hpp"
 #include "assignment2_rt/srv/set_threshold.hpp"
 
