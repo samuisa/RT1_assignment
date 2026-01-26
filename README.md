@@ -107,3 +107,63 @@ The node implements the `handle_turtle` function for each robot, applying the fo
     ```bash
     ros2 run assignment1_rt ui
     ```
+
+
+    # Robot Motion Project - Collision Avoidance
+
+This project implements a ROS 2 control architecture for a mobile robot in a Gazebo simulation. The system acts as a safety layer between the user inputs and the robot actuators, utilizing LiDAR data to prevent collisions and dynamically adjust velocity based on obstacle proximity.
+
+## System Architecture
+
+The system is designed with a "man-in-the-middle" architecture where the safety node intercepts user commands before they reach the simulation.
+
+| Node | Language | Role | Topic/Service |
+| :--- | :--- | :--- | :--- |
+| **`controller_node`** | C++ | User Interface for manual control and service requests. | **Pub:** `/cmd_vel_input`<br>**Client:** `get_avg_vel`, `set_threshold` |
+| **`safety_node`** | C++ | Safety filter, LiDAR processing, and logic handling. | **Sub:** `/cmd_vel_input`, `/scan`<br>**Pub:** `/cmd_vel`, `/obstacle_info` |
+| **`spawn_robot`** | Python | Launches Gazebo, spawns the URDF model, and bridges topics. | **Bridge:** `/cmd_vel`, `/scan`, `/odom` |
+
+## 1. `controller_node` (User Interface)
+
+This node runs in a separate terminal (via `xterm`) and provides a menu-driven interface for the user. It does **not** communicate directly with the robot; instead, it publishes to `/cmd_vel_input`, which is monitored by the Safety Node.
+
+**Features:**
+* **Velocity Command:** Accepts Linear ($x$) and Angular ($z$) inputs. The command is published for **5 seconds**, after which a stop command (0.0, 0.0) is automatically sent.
+* **Average Velocity Service:** Requests the average velocity calculated by the Safety Node over the last set of valid commands.
+* **Threshold Service:** Allows the user to dynamically update the safety stop distance (default: $0.5m$).
+
+## 2. `safety_node` (Reactive Safety Control)
+
+This node is the core of the collision avoidance system. It processes LaserScan data to detect obstacles and modifies the velocity commands received from the controller to ensure safety.
+
+### Collision Avoidance Logic
+The node subscribes to the LiDAR topic (`/scan`) and determines the minimum distance to obstacles in the **Front** and **Rear** sectors. The velocity $v$ sent to the robot is scaled based on the distance $d$ to the obstacle:
+
+1.  **Safe Zone:** ($d > \text{Slowdown Dist}$)
+    * The command is passed through unchanged: $v_{out} = v_{in}$.
+2.  **Slowdown Zone:** ($\text{Stop Dist} < d < \text{Slowdown Dist}$)
+    * The velocity is linearly scaled down to ensure a smooth deceleration:
+3.  **Stop Zone:** ($d \le \text{Stop Dist}$)
+    * The robot is forced to stop to prevent collision: $v_{out} = 0.0$.
+
+### Services & Data Publishing
+* **Obstacle Info:** Publishes a custom message `/obstacle_info` containing the closest obstacle distance and its direction (Front, Left, Right, Rear).
+* **Average Velocity:** Calculates the mean of the last 5 distinct velocity commands and returns it via the `get_avg_vel` service.
+* **Dynamic Threshold:** Provides the `set_threshold` service to update the stop distance at runtime.
+
+## Custom Interfaces
+
+The project utilizes custom Message and Service definitions:
+
+| Type | Name | Content |
+| :--- | :--- | :--- |
+| **Message** | `ObstacleInfo` | `float32 min_distance`, `string direction`, `float32 threshold` |
+| **Service** | `GetAvgVel` | **Req:** None <br> **Res:** `float32 avg_linear`, `float32 avg_angular` |
+| **Service** | `SetThreshold` | **Req:** `float32 new_threshold` <br> **Res:** `bool success` |
+
+## How to Run the Simulation
+
+ **Launch the Project:**
+    ```bash
+    ros2 launch assignment2_rt project_launch.py
+    ```
