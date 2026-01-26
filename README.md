@@ -123,6 +123,41 @@ The system is designed with a "man-in-the-middle" architecture where the safety 
 | **`safety_node`** | C++ | Safety filter, LiDAR processing, and logic handling. | **Sub:** `/cmd_vel_input`, `/scan`<br>**Pub:** `/cmd_vel`, `/obstacle_info` |
 | **`spawn_robot`** | Python | Launches Gazebo, spawns the URDF model, and bridges topics. | **Bridge:** `/cmd_vel`, `/scan`, `/odom` |
 
+ assignment2_rt
+    │   ├── CMakeLists.txt
+    │   ├── config
+    │   │   └── ekf.yaml
+    │   ├── launch
+    │   │   ├── project_launch.py
+    │   │   └── spawn_robot.launch.py
+    │   ├── meshes
+    │   │   ├── lidar.dae
+    │   │   ├── mogi_bot.dae
+    │   │   └── wheel.dae
+    │   ├── msg
+    │   │   └── ObstacleInfo.msg
+    │   ├── package.xml
+    │   ├── rviz
+    │   │   ├── gps.rviz
+    │   │   ├── rviz.rviz
+    │   │   └── urdf.rviz
+    │   ├── src
+    │   │   ├── controller_node.cpp
+    │   │   └── safety_node.cpp
+    │   ├── srv
+    │   │   ├── GetAvgVel.srv
+    │   │   └── SetThreshold.srv
+    │   ├── urdf
+    │   │   ├── materials.xacro
+    │   │   ├── mogi_bot.gazebo
+    │   │   └── mogi_bot.urdf
+    │   └── worlds
+    │       ├── home.sdf
+    │       ├── my.sdf
+    │       ├── my_world.sdf
+    │       └── world.sdf
+
+
 ## 1. `controller_node` (User Interface)
 
 This node runs in a separate terminal (via `xterm`) and provides a menu-driven interface for the user. It does **not** communicate directly with the robot; instead, it publishes to `/cmd_vel_input`, which is monitored by the Safety Node.
