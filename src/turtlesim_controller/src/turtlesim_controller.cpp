@@ -1,7 +1,7 @@
 #include "rclcpp/rclcpp.hpp"
 #include "turtlesim/msg/pose.hpp"
 #include "geometry_msgs/msg/twist.hpp"
-#include "nav_msgs/msg/odometry.hpp" // <--- NUOVO INCLUDE NECESSARIO
+#include "nav_msgs/msg/odometry.hpp"
 
 using std::placeholders::_1;
 
