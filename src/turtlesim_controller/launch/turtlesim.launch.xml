@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+  <node pkg="turtlesim" exec="turtlesim_node" name="sim" namespace="turtlesim1" args="--ros-args --log-level info" />
+  <node pkg="turtlesim_controller" exec="turtlesim_service" name="service" namespace="turtlesim1" args="--ros-args --log-level warn" />
+  <node pkg="turtlesim_controller" exec="turtlesim_controller3" name="control" namespace="turtlesim1" />
+</launch>
